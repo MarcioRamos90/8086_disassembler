@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "include/file_utils.c"
 #include "include/disassembler8086.c"
@@ -35,28 +36,31 @@ int main(int argc, char * argv[])
 	
 	FILE *file;
 
-	if ((file = fopen(path_assembled, "r")) == NULL)
+	if ((file = fopen(path_assembled, "rb")) == NULL)
 	{
 		perror("was unable to open this File\n");
 		return EXIT_FAILURE;
 	} else printf("File opened successfully\n");
 
-	const int buffer_in_size =256;
+	int BUFFER_SIZE = (int) file_lenght(file);
+	char *buffer_out = (char *) calloc(255, sizeof(char));
 
-	char *buffer_in = (char *) calloc(buffer_in_size, sizeof(char));
-	char *buffer_out = (char *) calloc(buffer_in_size, sizeof(char));
-	int n = 3;
-	printf("\n\n---proccess start \n");
+	FileObject fileObject = {file};
+	unsigned char *data = (unsigned char *) calloc(BUFFER_SIZE, sizeof(unsigned char));
 
-	while (fgets(buffer_in, n, file))
-	{
-		disassembly8086(buffer_in, n, buffer_out);
+	size_t bytes_read = fread(data, sizeof(unsigned char), BUFFER_SIZE, fileObject.file);
+
+	DataLookup dataLookup = {data, 0};
+
+	while (dataLookup.pos <= BUFFER_SIZE) {
+		/*
+			DISASSEMBLYNG THE BYTE
+		*/
+		if (disassembly8086(&dataLookup, buffer_out) == -1)
+		{
+			break;
+		}
 	}
-	printf("---proccess end \n");
-
-	printf("\n\n---result start \n");
-	printf("res \n%s", buffer_out);
-	printf("---result end \n");
 
 	if (fclose(file))
 	{
@@ -84,10 +88,11 @@ int main(int argc, char * argv[])
 	printf("nasm %s\n", name_disassembled);
 	printf("fc %s %s\n", path_assembled, bkp_name_disassembled);
 
-	free(buffer_in);
 	free(buffer_out);
 	free(name_disassembled);
-
+	free(bkp_name_disassembled);
+	free(path_assembled);
+	
 	printf("------ Finished ------\n");
 	return EXIT_SUCCESS;
 }

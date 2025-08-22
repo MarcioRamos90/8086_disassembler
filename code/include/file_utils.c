@@ -1,12 +1,19 @@
+#pragma once
+
 #include<stdlib.h>
+#include<stdint.h>
 
-
-const long get_file_size(FILE *f)
+typedef struct FileObject_s
 {
-	long size;
-	long current_pos = ftell(f);
+    FILE *file;
+} FileObject;
+
+int file_lenght(FILE *f)
+{
+	int size;
+	int current_pos = ftell(f);
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	fseek(f, current_pos, SEEK_SET);
-	return size + 1;
+	return size+4;
 }
