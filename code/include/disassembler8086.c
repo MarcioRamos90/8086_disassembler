@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "file_utils.c"
 
@@ -64,15 +65,51 @@ int disassembly8086(DataLookup *dataLookup, char *buffer_out)
 		mem_reg_displacement = d ? 0b00000111 : 0b00111000;
 
 		char reg = (byte2 & reg_displacement);
-		char mem_reg = ((byte2 & mem_reg_displacement) >> 3);
+		char mem_reg = ((byte2 & mem_reg_displacement));
+
+		if (d == 1)
+		{
+			reg = reg >> 3;
+		} 
+		else
+		{
+			mem_reg = mem_reg >> 3;
+		}
 
 		strncat(buffer_out, "mov ", 4);
 		strncat(buffer_out, REGs[reg][w], 2);
-		if (REGs[mem_reg][w] != NULL) {
-			strncat(buffer_out, ", ", 2);
-			strncat(buffer_out, REGs[mem_reg][w], 2);
+		char mod = byte2 >> 6;
+		char r_m = byte2 & 0b00000111;
+		switch (mod)
+		{
+		case 0b00:
+			if (r_m == 0b000) strncat(buffer_out, ", [bx + si]", 11);
+			if (r_m == 0b001) strncat(buffer_out, ", [bx + di]", 11);
+			if (r_m == 0b010) strncat(buffer_out, ", [bp + si]", 11);
+			if (r_m == 0b011) strncat(buffer_out, ", [bp + di]", 11);
+			if (r_m == 0b100) strncat(buffer_out, ", [si]", 6);
+			if (r_m == 0b101) strncat(buffer_out, ", [di]", 6);
+			if (r_m == 0b111) strncat(buffer_out, ", [bx]", 6);
+			break;
+		case 0b01:
+		{
+			if (r_m == 0b110) strncat(buffer_out, ", [bp]", 6); // return later on it ((BP) + D8)
+			break;
+		} 
+		case 0b11:
+		{
+			if (REGs[mem_reg][w] != NULL) {
+				strncat(buffer_out, REGs[mem_reg][w], 2);
+			}
+		} break;
+
+		default:
+			strncat(buffer_out, " -- weird behaviour", 19);
+			break;
 		}
+
 		strncat(buffer_out, "\n", 1);
+
 	}
 	return 0;
 }
